@@ -1,6 +1,7 @@
 import asyncio
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Optional, Tuple
+from typing import Literal
 
 from playwright.async_api import async_playwright, Browser, Page
 
@@ -227,3 +228,70 @@ class BrowserController:
             "aria_snapshot": state.aria_snapshot,
             "candidates": [asdict(c) for c in state.candidates],
         }
+    async def click(self, cid: str) -> str:
+        t = self.get_last_target(cid)
+        if not t:
+            return f"unknown id: {cid}. run observe() first."
+        role, name, nth = t
+        assert self.page is not None
+
+        loc = self.page.get_by_role(role, name=name)
+        try:
+            await loc.nth(nth).click(timeout=10000)
+            return f"clicked {cid} ({role=}, {name=}, {nth=})"
+        except Exception as e:
+            return f"click failed for {cid}: {type(e).__name__}: {e}"
+
+    async def type(self, cid: str, text: str) -> str:
+        t = self.get_last_target(cid)
+        if not t:
+            return f"unknown id: {cid}. run observe() first."
+        role, name, nth = t
+        assert self.page is not None
+
+        loc = self.page.get_by_role(role, name=name)
+        try:
+            # fill is usually best for inputs
+            await loc.nth(nth).fill(text, timeout=10000)
+            return f"typed into {cid} ({role=}, {name=}, {nth=})"
+        except Exception as e:
+            return f"type failed for {cid}: {type(e).__name__}: {e}"
+
+    async def select(self, cid: str, option_text: str) -> str:
+        t = self.get_last_target(cid)
+        if not t:
+            return f"unknown id: {cid}. run observe() first."
+        role, name, nth = t
+        assert self.page is not None
+
+        loc = self.page.get_by_role(role, name=name)
+        try:
+            el = loc.nth(nth)
+            # Try select_option by label (works for <select>)
+            await el.select_option(label=option_text, timeout=10000)
+            return f"selected '{option_text}' on {cid}"
+        except Exception:
+            # Fallback: click combobox + click option by text
+            try:
+                await loc.nth(nth).click(timeout=10000)
+                await self.page.get_by_role("option", name=option_text).first.click(timeout=10000)
+                return f"selected '{option_text}' on {cid} (combobox fallback)"
+            except Exception as e:
+                return f"select failed for {cid}: {type(e).__name__}: {e}"
+
+    async def scroll(self, direction: Literal["down", "up"] = "down", amount: int = 800) -> str:
+        assert self.page is not None
+        dy = amount if direction == "down" else -amount
+        try:
+            await self.page.mouse.wheel(0, dy)
+            return f"scrolled {direction} {amount}px"
+        except Exception as e:
+            return f"scroll failed: {type(e).__name__}: {e}"
+
+    async def back(self) -> str:
+        assert self.page is not None
+        try:
+            await self.page.go_back(wait_until="domcontentloaded")
+            return "went back"
+        except Exception as e:
+            return f"back failed: {type(e).__name__}: {e}"

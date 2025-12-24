@@ -83,9 +83,49 @@ async def repl():
                 continue
 
             console.print("[red]Unknown command.[/red] Type 'help'.")
+
+
+            if cmd.startswith("click "):
+                cid = cmd.split(maxsplit=1)[1].strip()
+                console.print(await bc.click(cid))
+                continue
+
+            if cmd.startswith("type "):
+                parts = cmd.split(maxsplit=2)
+                if len(parts) < 3:
+                    console.print("[red]Usage: type <id> <text>[/red]")
+                    continue
+                _, cid, text = parts
+                console.print(await bc.type(cid, text))
+                continue
+
+            if cmd.startswith("select "):
+                parts = cmd.split(maxsplit=2)
+                if len(parts) < 3:
+                    console.print("[red]Usage: select <id> <option_text>[/red]")
+                    continue
+                _, cid, opt = parts
+                console.print(await bc.select(cid, opt))
+                continue
+
+            if cmd.startswith("scroll"):
+                parts = cmd.split()
+                direction = parts[1] if len(parts) > 1 else "down"
+                amount = int(parts[2]) if len(parts) > 2 else 800
+                console.print(await bc.scroll(direction=direction, amount=amount))
+                continue
+
+            if cmd == "back":
+                console.print(await bc.back())
+                continue
+
+
     finally:
         await bc.close()
         console.print("[green]Browser closed.[/green]")
+
+
+
 
 
 def main():
