@@ -41,6 +41,3 @@ CHROME_EXECUTABLE_PATH=/Applications/Google Chrome.app/Contents/MacOS/Google Chr
 python -m src.agent.main
 ```
 
-## Примечания
-- Агент не хардкодит домены/селекторы. Все решения принимаются из текущего наблюдения страницы.
-- Рискованные действия (удаление/оплата/отправка) проходят через security layer.
